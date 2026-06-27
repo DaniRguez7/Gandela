@@ -3,6 +3,61 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<script>
+(function() {
+  const PIN = '160724';
+  const KEY = 'gandela_auth';
+  const SESSION_HOURS = 24;
+  function isAuthed() {
+    const d = localStorage.getItem(KEY);
+    if (!d) return false;
+    try { return Date.now() - JSON.parse(d).ts < SESSION_HOURS * 3600000; } catch { return false; }
+  }
+  if (!isAuthed()) {
+    document.addEventListener('DOMContentLoaded', function() {
+      const overlay = document.createElement('div');
+      overlay.id = 'pin-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;background:#1a1416;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:0;font-family:Inter,sans-serif';
+      overlay.innerHTML = `
+        <div style="font-family:Cormorant Garamond,serif;font-size:28px;font-weight:300;letter-spacing:0.18em;color:#e0b4a0;text-transform:uppercase;margin-bottom:6px">Gandela</div>
+        <div style="font-size:9px;letter-spacing:0.25em;color:#5a4548;text-transform:uppercase;margin-bottom:48px">Watch Collection</div>
+        <div style="display:flex;gap:14px;margin-bottom:32px" id="pin-dots">
+          ${[0,1,2,3,4,5].map(i=>`<div id="dot-${i}" style="width:10px;height:10px;border-radius:50%;background:#2f2529;transition:background 0.15s"></div>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,72px);gap:12px">
+          ${[1,2,3,4,5,6,7,8,9,'','0','⌫'].map(k=>`
+            <button onclick="pinKey('${k}')" style="width:72px;height:72px;border-radius:50%;background:${k===''?'transparent':'#221a1d'};border:${k===''?'none':'0.5px solid #2f2529'};color:#f0e6e8;font-size:22px;font-family:Inter,sans-serif;cursor:${k===''?'default':'pointer'};transition:background 0.15s"
+            ${k===''?'disabled':''} onmousedown="this.style.background='#2b2226'" onmouseup="this.style.background='#221a1d'">${k}</button>`).join('')}
+        </div>
+        <div id="pin-error" style="color:#c97070;font-size:12px;margin-top:20px;opacity:0;transition:opacity 0.2s">PIN incorrecto</div>`;
+      document.body.appendChild(overlay);
+      window._pinEntry = '';
+      window.pinKey = function(k) {
+        if (k === '') return;
+        if (k === '⌫') { window._pinEntry = window._pinEntry.slice(0,-1); }
+        else if (window._pinEntry.length < 6) { window._pinEntry += k; }
+        const dots = document.querySelectorAll('[id^="dot-"]');
+        dots.forEach((d,i) => d.style.background = i < window._pinEntry.length ? '#c9a063' : '#2f2529');
+        if (window._pinEntry.length === 6) {
+          if (window._pinEntry === PIN) {
+            localStorage.setItem(KEY, JSON.stringify({ts: Date.now()}));
+            overlay.style.opacity = '0';
+            overlay.style.transition = 'opacity 0.3s';
+            setTimeout(() => overlay.remove(), 300);
+          } else {
+            document.getElementById('pin-error').style.opacity = '1';
+            setTimeout(() => {
+              window._pinEntry = '';
+              dots.forEach(d => d.style.background = '#2f2529');
+              document.getElementById('pin-error').style.opacity = '0';
+            }, 800);
+          }
+        }
+      };
+    });
+  }
+})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#1a1416">
